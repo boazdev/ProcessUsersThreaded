@@ -69,27 +69,41 @@ public class GitHubRepoService {
 
     public JSONObject mergeJSONObjects(List<JSONObject> jsonObjects) {
         JSONObject mergedObject = new JSONObject();
+        JSONObject linesByLangsObject = new JSONObject();
+        int totalCommits = 0;
+        int totalLinesCount = 0;
+        int totalTestsCount = 0;
 
         for (JSONObject jsonObject : jsonObjects) {
-            for (String key : jsonObject.keySet()) {
-                if (mergedObject.has(key)) {
-                    Object existingValue = mergedObject.get(key);
-                    Object newValue = jsonObject.get(key);
+            totalCommits += jsonObject.getInt(ConstantJsonKeys.commitsKey);
+            totalLinesCount += jsonObject.getInt(ConstantJsonKeys.linesCountKey);
+            totalTestsCount += jsonObject.getInt(ConstantJsonKeys.testsCountKey);
+
+            JSONObject linesByLangsNestedObj = jsonObject.getJSONObject(ConstantJsonKeys.linesByLanguageKey);
+            for (String key : linesByLangsNestedObj.keySet()) {
+                if (linesByLangsObject.has(key)) {
+                    Object existingValue = linesByLangsObject.get(key);
+                    Object newValue = linesByLangsNestedObj.get(key);
 
                     if (existingValue instanceof Number && newValue instanceof Number) {
-                        Number sum = ((Number) existingValue).doubleValue() + ((Number) newValue).doubleValue();
-                        mergedObject.put(key, sum);
-                    } else {
-                        mergedObject.put(key, newValue);
+                        Number sum = ((Number) existingValue).intValue() + ((Number) newValue).intValue();
+                        linesByLangsObject.put(key, sum);
                     }
                 } else {
-                    mergedObject.put(key, jsonObject.get(key));
+                    linesByLangsObject.put(key, linesByLangsNestedObj.get(key));
                 }
             }
         }
 
+        mergedObject.put(ConstantJsonKeys.commitsKey, totalCommits);
+        mergedObject.put(ConstantJsonKeys.linesCountKey, totalLinesCount);
+        mergedObject.put(ConstantJsonKeys.testsCountKey, totalTestsCount);
+        mergedObject.put(ConstantJsonKeys.linesByLanguageKey, linesByLangsObject);
+
         return mergedObject;
     }
+
+
 
 
     public static boolean cloneRepositoryLFS(String repositoryUrl, String path, Integer numTries) throws InterruptedException, IOException {
